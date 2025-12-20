@@ -1,0 +1,255 @@
+<div class="container-fluid p-3 analytics-height">
+     <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="page-title"> Dashboard Analytics</h2>
+            <p class="text-muted">Generate detailed reports and analyze your expense data</p>
+        </div>
+    </div>
+    <!-- Month Selector -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+           <div class="d-flex align-items-center justify-content-start gap-2">
+                <small class="text-muted fw-bold">Quick Jump:</small>
+                <div class="btn-group" role="group">
+                    <button *ngFor="let monthData of getMonthsWithExpenses()" 
+                            class="btn btn-sm btn-outline-secondary"
+                            (click)="jumpToMonth(monthData.month, monthData.year)"
+                            [class.active]="monthData.month === selectedMonth && monthData.year === selectedYear">
+                        {{getMonthShortName(monthData.month)}} ({{monthData.count}})
+                    </button>
+                </div>
+                <small class="text-muted" *ngIf="getMonthsWithExpenses().length === 0">No expenses yet</small>
+            </div>
+        </div>
+        <div class="col-md-6">
+          
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-total">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">{{getSelectedMonthName()}}</h6>
+                    <h3 class="card-title mb-0">${{getMonthlyExpenses()}}</h3>
+                    <small class="text-muted">{{getExpenseCountForMonth()}} expenses</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-pending">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Pending Approvals</h6>
+                    <h3 class="card-title mb-0">{{getFilteredPendingApprovals().length}}</h3>
+                    <small class="text-muted">${{getMonthlyPendingTotal()}} this month</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-approved">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Approved This Month</h6>
+                    <h3 class="card-title mb-0">${{getMonthlyApprovedTotal()}}</h3>
+                    <small class="text-muted">{{getFilteredApprovedExpenses().length}} items</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-budget">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Budget Status</h6>
+                    <h3 class="card-title mb-0">{{getBudgetPercentage()}}%</h3>
+                    <small class="text-muted">${{monthlyBudget - getMonthlyExpenses()}} remaining</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expense Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Add New Expense</h5>
+                    <form>
+                        <div class="row g-3">
+                            <!-- Date Field -->
+                            <div class="col-md-3">
+                                <label for="expenseDate" class="form-label">📅 Date</label>
+                                <input 
+                                    type="date" 
+                                    class="form-control" 
+                                    id="expenseDate" 
+                                    [(ngModel)]="expense.date"
+                                    name="date">
+                            </div>
+
+                            <!-- Category Dropdown -->
+                            <div class="col-md-3">
+                                <label for="expenseCategory" class="form-label">📂 Category</label>
+                                <select 
+                                    class="form-select" 
+                                    id="expenseCategory"
+                                    [(ngModel)]="expense.category"
+                                    name="category">
+                                    <option value="" selected>Select category</option>
+                                    <option value="Shopping">Shopping</option>
+                                    <option value="Bills">Bills</option>
+                                    <option value="Travel">Travel</option>
+                                    <option value="Food">Food</option>
+                                    <option value="Entertainment">Entertainment</option>
+                                    <option value="Healthcare">Healthcare</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <!-- Amount Field -->
+                            <div class="col-md-2">
+                                <label for="expenseAmount" class="form-label">💰 Amount</label>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    id="expenseAmount"
+                                    [(ngModel)]="expense.amount"
+                                    name="amount"
+                                    placeholder="0.00"
+                                    step="0.01">
+                            </div>
+
+                            <!-- Description Field -->
+                            <div class="col-md-3">
+                                <label for="expenseDescription" class="form-label">💬 Description</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="expenseDescription"
+                                    [(ngModel)]="expense.description"
+                                    name="description"
+                                    placeholder="Optional notes">
+                            </div>
+
+                            <!-- Add Button -->
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button 
+                                    type="button" 
+                                    class="btn btn-primary w-100" 
+                                    (click)="addExpense()">
+                                    ✅ Add
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-6 col-lg-6">
+          <div class="card">
+          <div class="card-body p-2">
+            
+              <table class="table table-sm">
+    <thead>
+      <tr>
+        <th scope="col">Pending Approvals</th>
+        <th scope="col">Category</th>
+        <th scope="col">Amount</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="getFilteredPendingApprovals().length === 0">
+        <td colspan="4" class="text-center text-muted">No pending approvals for {{getSelectedMonthName()}}</td>
+      </tr>
+      <tr *ngFor="let expense of getFilteredPendingApprovals(); let i = index">
+        <td>
+          <small><strong>{{expense.date}}</strong></small><br>
+          <small class="text-muted">{{expense.description || 'No description'}}</small>
+        </td>
+        <td><span class="badge bg-secondary">{{expense.category}}</span></td>
+        <td><strong>${{expense.amount}}</strong></td>
+        <td>
+          <button class="btn btn-success btn-sm me-1" (click)="approveExpense(expense.originalIndex)" title="Approve">✓</button>
+          <button class="btn btn-danger btn-sm" (click)="rejectExpense(expense.originalIndex)" title="Reject">✗</button>
+        </td>
+      </tr>
+      
+    </tbody>
+  </table>
+          </div>
+          </div>
+      </div>
+
+      <div class="col-6 col-lg-6">
+      <div class="card">
+          <div class="card-body">
+              <h5 class="card-title">Approved Expenses</h5>
+              <ul class="list-group list-group-flush">
+                  <li class="list-group-item" *ngIf="getFilteredApprovedExpenses().length === 0">No approved expenses for {{getSelectedMonthName()}}</li>
+                  <li class="list-group-item d-flex justify-content-between align-items-start" *ngFor="let expense of getFilteredApprovedExpenses()">
+                      <div class="ms-2 me-auto">
+                          <div class="fw-bold">{{expense.category}} - {{expense.date}}</div>
+                          <small class="text-muted">{{expense.description || 'No description'}}</small>
+                      </div>
+                      <span class="badge bg-success rounded-pill">${{expense.amount}}</span>
+                  </li>
+              </ul>
+          </div>
+          </div>
+      </div>
+    </div>
+       <!-- Category Breakdown & Spending Trends -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">💹 Spending by Category</h5>
+                    <div class="category-breakdown">
+                        <div class="category-item" *ngFor="let cat of getCategoryBreakdown()">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="category-name">{{cat.category}}</span>
+                                <span class="category-amount">${{cat.amount}}</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" [style.width.%]="cat.percentage" 
+                                     [ngClass]="getProgressBarClass(cat.category)"></div>
+                            </div>
+                        </div>
+                        <div *ngIf="getCategoryBreakdown().length === 0" class="text-center text-muted py-3">
+                            No expenses for {{getSelectedMonthName()}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">📊 Recent Activity</h5>
+                    <div class="recent-activity">
+                        <div class="activity-item" *ngFor="let expense of getRecentActivity()">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="badge" [ngClass]="getStatusBadgeClass(expense.status || 'Pending')">{{expense.status || 'Pending'}}</span>
+                                    <span class="ms-2 fw-bold">{{expense.category}}</span>
+                                    <br>
+                                    <small class="text-muted">{{expense.date}} - {{expense.description || 'No description'}}</small>
+                                </div>
+                                <span class="fw-bold">${{expense.amount}}</span>
+                            </div>
+                            <hr class="my-2">
+                        </div>
+                        <div *ngIf="getRecentActivity().length === 0" class="text-center text-muted py-3">
+                            No activity for {{getSelectedMonthName()}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

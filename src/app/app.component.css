@@ -1,0 +1,9 @@
+.full-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+.full-screen {
+  width: 100vw;   /* 100% of viewport width */
+  height: 100vh;  /* 100% of viewport height */
+}

@@ -1,0 +1,348 @@
+<div class="container-fluid p-3 analytics-height">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="page-title">📊 Reports & Analytics</h2>
+            <p class="text-muted">Generate detailed reports and analyze your expense data</p>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Report Type</label>
+                            <select class="form-select" [(ngModel)]="selectedReportType" (change)="generateReport()">
+                                <option value="expense">Expense Summary</option>
+                                <option value="category">Category Breakdown</option>
+                                <option value="monthly">Monthly Trends</option>
+                                <option value="trips">Trip Reports</option>
+                                <option value="detailed">Detailed Report</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Start Date</label>
+                            <input type="date" class="form-control" [(ngModel)]="startDate" (change)="generateReport()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">End Date</label>
+                            <input type="date" class="form-control" [(ngModel)]="endDate" (change)="generateReport()">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100" (click)="generateReport()">
+                                🔄 Generate Report
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-secondary btn-sm" (click)="setQuickDate('today')">
+                                    Today
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" (click)="setQuickDate('week')">
+                                    This Week
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" (click)="setQuickDate('month')">
+                                    This Month
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" (click)="setQuickDate('quarter')">
+                                    This Quarter
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" (click)="setQuickDate('year')">
+                                    This Year
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4" *ngIf="reportGenerated">
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-total">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Expenses</h6>
+                    <h3 class="card-title mb-0">${{reportData.totalExpenses}}</h3>
+                    <small class="text-muted">{{reportData.expenseCount}} transactions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-average">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Average per Day</h6>
+                    <h3 class="card-title mb-0">${{reportData.averagePerDay}}</h3>
+                    <small class="text-muted">Daily spending</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-highest">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Highest Category</h6>
+                    <h3 class="card-title mb-0">{{reportData.highestCategory}}</h3>
+                    <small class="text-muted">${{reportData.highestCategoryAmount}}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-trips">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Trips</h6>
+                    <h3 class="card-title mb-0">{{reportData.totalTrips}}</h3>
+                    <small class="text-muted">${{reportData.tripsExpense}} spent</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Content -->
+    <div class="row" *ngIf="reportGenerated">
+        <!-- Expense Summary Report -->
+        <div class="col-12" *ngIf="selectedReportType === 'expense'">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📄 Expense Summary Report</h5>
+                    <div>
+                        <button class="btn btn-sm btn-success me-2" (click)="exportToCSV()">
+                            📅 Export CSV
+                        </button>
+                        <button class="btn btn-sm btn-danger" (click)="printReport()">
+                            🖨️ Print
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let expense of reportData.expenses">
+                                    <td>{{expense.date}}</td>
+                                    <td><span class="badge bg-secondary">{{expense.category}}</span></td>
+                                    <td>{{expense.description || 'N/A'}}</td>
+                                    <td class="fw-bold">${{expense.amount}}</td>
+                                    <td><span class="badge" [class.bg-success]="expense.status === 'Approved'" 
+                                              [class.bg-warning]="expense.status === 'Pending'">{{expense.status}}</span></td>
+                                </tr>
+                                <tr *ngIf="reportData.expenses.length === 0">
+                                    <td colspan="5" class="text-center text-muted">No expenses found for selected period</td>
+                                </tr>
+                            </tbody>
+                            <tfoot *ngIf="reportData.expenses.length > 0">
+                                <tr class="fw-bold">
+                                    <td colspan="3" class="text-end">Total:</td>
+                                    <td>${{reportData.totalExpenses}}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Breakdown Report -->
+        <div class="col-12" *ngIf="selectedReportType === 'category'">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📊 Category Breakdown</h5>
+                    <button class="btn btn-sm btn-success" (click)="exportToCSV()">
+                        📅 Export CSV
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Category Distribution</h6>
+                            <div *ngFor="let cat of reportData.categoryBreakdown" class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="fw-bold">{{cat.category}}</span>
+                                    <span>${{cat.amount}} ({{cat.percentage}}%)</span>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar" [style.width.%]="cat.percentage" 
+                                         [ngClass]="getProgressBarClass(cat.category)">
+                                        {{cat.count}} items
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Summary Table</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Category</th>
+                                            <th>Count</th>
+                                            <th>Amount</th>
+                                            <th>%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let cat of reportData.categoryBreakdown">
+                                            <td><span class="badge bg-secondary">{{cat.category}}</span></td>
+                                            <td>{{cat.count}}</td>
+                                            <td class="fw-bold">${{cat.amount}}</td>
+                                            <td>{{cat.percentage}}%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Trends Report -->
+        <div class="col-12" *ngIf="selectedReportType === 'monthly'">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📈 Monthly Spending Trends</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Expenses</th>
+                                    <th>Count</th>
+                                    <th>Average</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let month of reportData.monthlyData; let i = index">
+                                    <td class="fw-bold">{{month.month}}</td>
+                                    <td class="fw-bold">${{month.total}}</td>
+                                    <td>{{month.count}} items</td>
+                                    <td>${{month.average}}</td>
+                                    <td>
+                                        <span *ngIf="i > 0 && month.total > reportData.monthlyData[i-1].total" 
+                                              class="badge bg-danger">↑ Increased</span>
+                                        <span *ngIf="i > 0 && month.total < reportData.monthlyData[i-1].total" 
+                                              class="badge bg-success">↓ Decreased</span>
+                                        <span *ngIf="i === 0" class="badge bg-secondary">-</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trip Reports -->
+        <div class="col-12" *ngIf="selectedReportType === 'trips'">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">✈️ Trip Expense Report</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Trip Name</th>
+                                    <th>Destination</th>
+                                    <th>Duration</th>
+                                    <th>Budget</th>
+                                    <th>Spent</th>
+                                    <th>Status</th>
+                                    <th>Budget Usage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let trip of reportData.trips">
+                                    <td class="fw-bold">{{trip.name}}</td>
+                                    <td>{{trip.destination}}</td>
+                                    <td>{{trip.startDate}} to {{trip.endDate}}</td>
+                                    <td>${{trip.budget}}</td>
+                                    <td class="fw-bold">${{trip.spent}}</td>
+                                    <td><span class="badge" [ngClass]="getTripStatusClass(trip.status)">{{trip.status}}</span></td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" [class.bg-danger]="trip.budgetPercentage > 100"
+                                                 [style.width.%]="Math.min(trip.budgetPercentage, 100)">
+                                                {{trip.budgetPercentage}}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr *ngIf="reportData.trips.length === 0">
+                                    <td colspan="7" class="text-center text-muted">No trips found for selected period</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Report -->
+        <div class="col-12" *ngIf="selectedReportType === 'detailed'">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📝 Detailed Comprehensive Report</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <h6 class="border-bottom pb-2">Expense Overview</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><strong>Total Expenses:</strong> ${{reportData.totalExpenses}}</li>
+                                <li class="mb-2"><strong>Total Transactions:</strong> {{reportData.expenseCount}}</li>
+                                <li class="mb-2"><strong>Approved:</strong> ${{reportData.approvedTotal}}</li>
+                                <li class="mb-2"><strong>Pending:</strong> ${{reportData.pendingTotal}}</li>
+                                <li class="mb-2"><strong>Date Range:</strong> {{startDate}} to {{endDate}}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <h6 class="border-bottom pb-2">Top Spending Categories</h6>
+                            <ol class="list-group list-group-numbered">
+                                <li class="list-group-item d-flex justify-content-between align-items-start" 
+                                    *ngFor="let cat of reportData.categoryBreakdown.slice(0, 5)">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">{{cat.category}}</div>
+                                        {{cat.count}} transactions
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">${{cat.amount}}</span>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="row" *ngIf="!reportGenerated">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <h3 class="text-muted mb-3">📄 No Report Generated</h3>
+                    <p class="text-muted">Select a report type and date range, then click "Generate Report"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,354 @@
+<div class="container-fluid p-3 analytics-height" >
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="page-title">📊 Analytics & Insights</h2>
+            <p class="text-muted">Detailed analysis of your spending patterns and financial trends</p>
+        </div>
+    </div>
+
+    <!-- Time Period Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Analysis Period</label>
+                            <select class="form-select" [(ngModel)]="analysisPeriod" (change)="updateAnalytics()">
+                                <option value="week">Last Week</option>
+                                <option value="month">Last Month</option>
+                                <option value="quarter">Last Quarter</option>
+                                <option value="year">Last Year</option>
+                                <option value="all">All Time</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Compare With</label>
+                            <select class="form-select" [(ngModel)]="compareWith" (change)="updateAnalytics()">
+                                <option value="none">No Comparison</option>
+                                <option value="previous">Previous Period</option>
+                                <option value="lastYear">Same Period Last Year</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">View Type</label>
+                            <select class="form-select" [(ngModel)]="viewType">
+                                <option value="overview">Overview</option>
+                                <option value="detailed">Detailed Analysis</option>
+                                <option value="trends">Trends</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100" (click)="refreshAnalytics()">
+                                🔄 Refresh Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card metric-card metric-total">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Total Spending</h6>
+                            <h3 class="card-title mb-0">${{getTotalSpending()}}</h3>
+                            <small class="text-muted">This period</small>
+                        </div>
+                        <div class="metric-icon">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+                    </div>
+                    <div class="trend-indicator" [class.trend-up]="spendingTrend > 0" [class.trend-down]="spendingTrend < 0">
+                        {{spendingTrend > 0 ? '↑' : '↓'}} {{Math.abs(spendingTrend)}}% vs previous period
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card metric-average">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Average per Day</h6>
+                            <h3 class="card-title mb-0">${{getAveragePerDay()}}</h3>
+                            <small class="text-muted">Daily spending</small>
+                        </div>
+                        <div class="metric-icon">
+                            <i class="bi bi-calendar-day"></i>
+                        </div>
+                    </div>
+                    <div class="trend-indicator" [class.trend-up]="avgTrend > 0" [class.trend-down]="avgTrend < 0">
+                        {{avgTrend > 0 ? '↑' : '↓'}} {{Math.abs(avgTrend)}}% change
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card metric-transactions">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Transactions</h6>
+                            <h3 class="card-title mb-0">{{getTotalTransactions()}}</h3>
+                            <small class="text-muted">Total count</small>
+                        </div>
+                        <div class="metric-icon">
+                            <i class="bi bi-receipt"></i>
+                        </div>
+                    </div>
+                    <div class="trend-indicator trend-neutral">
+                        {{getTransactionFrequency()}} per week
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card metric-categories">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Top Category</h6>
+                            <h3 class="card-title mb-0">{{getTopCategory().name}}</h3>
+                            <small class="text-muted">${{getTopCategory().amount}}</small>
+                        </div>
+                        <div class="metric-icon">
+                            <i class="bi bi-tags"></i>
+                        </div>
+                    </div>
+                    <div class="trend-indicator trend-neutral">
+                        {{getTopCategory().percentage}}% of total
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spending Trend Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📈 Spending Trend</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-primary" [class.active]="chartType === 'line'" (click)="chartType = 'line'">Line</button>
+                        <button class="btn btn-outline-primary" [class.active]="chartType === 'bar'" (click)="chartType = 'bar'">Bar</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <div class="chart-placeholder">
+                            <canvas id="trendChart" height="80"></canvas>
+                            <div class="chart-legend">
+                                <div class="d-flex justify-content-center flex-wrap gap-3 mt-3">
+                                    <div class="legend-item" *ngFor="let month of getMonthlyData()">
+                                        <span class="legend-color" [style.background]="month.color"></span>
+                                        <span class="legend-label">{{month.month}}: ${{month.amount}}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Breakdown and Top Expenses -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🎯 Category Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div class="category-breakdown">
+                        <div class="category-item" *ngFor="let category of getCategoryBreakdown()">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <strong>{{category.name}}</strong>
+                                    <small class="text-muted ms-2">({{category.count}} transactions)</small>
+                                </div>
+                                <span class="fw-bold">${{category.amount}}</span>
+                            </div>
+                            <div class="progress mb-2" style="height: 25px;">
+                                <div class="progress-bar" [style.width.%]="category.percentage" 
+                                     [style.background]="category.color">
+                                    {{category.percentage}}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">💰 Top Expenses</h5>
+                </div>
+                <div class="card-body">
+                    <div class="top-expenses">
+                        <div class="expense-item" *ngFor="let expense of getTopExpenses(); let i = index">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <span class="rank-badge">{{i + 1}}</span>
+                                    <div class="ms-3">
+                                        <div class="fw-bold">{{expense.description}}</div>
+                                        <small class="text-muted">{{expense.category}} • {{expense.date}}</small>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold amount">${{expense.amount}}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spending Patterns -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📅 Day of Week Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <div class="day-analysis">
+                        <div class="day-item" *ngFor="let day of getDayOfWeekAnalysis()">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-bold">{{day.name}}</span>
+                                <span>${{day.amount}}</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-info" [style.width.%]="day.percentage"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">⏰ Time of Day Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <div class="time-analysis">
+                        <div class="time-item" *ngFor="let time of getTimeOfDayAnalysis()">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-bold">{{time.period}}</span>
+                                <span>${{time.amount}}</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-warning" [style.width.%]="time.percentage"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🎯 Budget Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="budget-performance">
+                        <div class="performance-item" *ngFor="let budget of getBudgetPerformance()">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-bold">{{budget.category}}</span>
+                                <span class="badge" [class.bg-success]="budget.status === 'under'"
+                                      [class.bg-warning]="budget.status === 'near'"
+                                      [class.bg-danger]="budget.status === 'over'">
+                                    {{budget.status === 'under' ? '✓' : budget.status === 'near' ? '!' : '✗'}}
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" 
+                                     [class.bg-success]="budget.status === 'under'"
+                                     [class.bg-warning]="budget.status === 'near'"
+                                     [class.bg-danger]="budget.status === 'over'"
+                                     [style.width.%]="Math.min(budget.percentage, 100)"></div>
+                            </div>
+                            <small class="text-muted">{{budget.percentage}}% used</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights and Recommendations -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">💡 Insights & Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="insights-grid">
+                        <div class="insight-card" *ngFor="let insight of getInsights()" [class]="'insight-' + insight.type">
+                            <div class="insight-icon">{{insight.icon}}</div>
+                            <div class="insight-content">
+                                <h6 class="insight-title">{{insight.title}}</h6>
+                                <p class="insight-description">{{insight.description}}</p>
+                                <span class="insight-badge" [class]="'badge-' + insight.type">{{insight.impact}}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="row" *ngIf="compareWith !== 'none'">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 Period Comparison</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Current Period</th>
+                                    <th>Previous Period</th>
+                                    <th>Change</th>
+                                    <th>Change %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let comparison of getComparisonData()">
+                                    <td><strong>{{comparison.category}}</strong></td>
+                                    <td>${{comparison.current}}</td>
+                                    <td>${{comparison.previous}}</td>
+                                    <td [class.text-success]="comparison.change < 0" 
+                                        [class.text-danger]="comparison.change > 0">
+                                        {{comparison.change > 0 ? '+' : ''}}${{comparison.change}}
+                                    </td>
+                                    <td [class.text-success]="comparison.changePercent < 0" 
+                                        [class.text-danger]="comparison.changePercent > 0">
+                                        {{comparison.changePercent > 0 ? '+' : ''}}{{comparison.changePercent}}%
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

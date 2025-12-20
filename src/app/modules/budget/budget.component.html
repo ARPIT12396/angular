@@ -1,0 +1,306 @@
+<div class="container-fluid p-3 analytics-height">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="page-title">💰 Budget Management</h2>
+            <p class="text-muted">Set and track your spending budgets by category and time period</p>
+        </div>
+    </div>
+
+    <!-- Period Selector -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Budget Period</label>
+                            <select class="form-select" [(ngModel)]="selectedPeriod" (change)="loadBudgetData()">
+                                <option value="monthly">Monthly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Month</label>
+                            <select class="form-select" [(ngModel)]="selectedMonth" (change)="loadBudgetData()">
+                                <option *ngFor="let month of months; let i = index" [value]="i">{{month}}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Year</label>
+                            <select class="form-select" [(ngModel)]="selectedYear" (change)="loadBudgetData()">
+                                <option *ngFor="let year of years" [value]="year">{{year}}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100" (click)="showBudgetForm = !showBudgetForm">
+                                {{showBudgetForm ? '✕ Cancel' : '➕ Set Budget'}}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-total">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Budget</h6>
+                    <h3 class="card-title mb-0">${{getTotalBudget()}}</h3>
+                    <small class="text-muted">This period</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-spent">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Spent</h6>
+                    <h3 class="card-title mb-0">${{getTotalSpent()}}</h3>
+                    <small class="text-muted">{{getSpentPercentage()}}% used</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-remaining">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Remaining</h6>
+                    <h3 class="card-title mb-0">${{getRemaining()}}</h3>
+                    <small class="text-muted">{{getRemainingPercentage()}}% left</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-alerts">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Alerts</h6>
+                    <h3 class="card-title mb-0">{{getAlerts().length}}</h3>
+                    <small class="text-muted">Overspending warnings</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Budget Progress -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="mb-3">Overall Budget Status</h5>
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar" [class.bg-success]="getSpentPercentage() <= 75" 
+                             [class.bg-warning]="getSpentPercentage() > 75 && getSpentPercentage() <= 90"
+                             [class.bg-danger]="getSpentPercentage() > 90"
+                             [style.width.%]="Math.min(getSpentPercentage(), 100)">
+                            {{getSpentPercentage()}}% Used
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <small class="text-muted">$0</small>
+                        <small class="text-muted">${{getTotalBudget()}}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Set Budget Form -->
+    <div class="row mb-4" *ngIf="showBudgetForm">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{{editingBudgetId !== null ? 'Edit Budget' : 'Set New Budget'}}</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="budgetCategory" class="form-label">📂 Category</label>
+                                <select class="form-select" id="budgetCategory" 
+                                        [(ngModel)]="currentBudget.category" name="category">
+                                    <option value="" selected>Select category</option>
+                                    <option value="Shopping">Shopping</option>
+                                    <option value="Bills">Bills</option>
+                                    <option value="Travel">Travel</option>
+                                    <option value="Food">Food</option>
+                                    <option value="Entertainment">Entertainment</option>
+                                    <option value="Healthcare">Healthcare</option>
+                                    <option value="Transportation">Transportation</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="budgetAmount" class="form-label">💰 Budget Amount</label>
+                                <input type="number" class="form-control" id="budgetAmount" 
+                                       [(ngModel)]="currentBudget.amount" name="amount" 
+                                       placeholder="0.00" step="0.01">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="alertThreshold" class="form-label">⚠️ Alert at (%)</label>
+                                <input type="number" class="form-control" id="alertThreshold" 
+                                       [(ngModel)]="currentBudget.alertThreshold" name="alertThreshold" 
+                                       placeholder="80" min="0" max="100">
+                            </div>
+                            <div class="col-md-12">
+                                <label for="budgetNotes" class="form-label">📝 Notes</label>
+                                <textarea class="form-control" id="budgetNotes" rows="2" 
+                                          [(ngModel)]="currentBudget.notes" name="notes" 
+                                          placeholder="Budget notes and details..."></textarea>
+                            </div>
+                            <div class="col-12">
+                                <button type="button" class="btn btn-primary me-2" (click)="saveBudget()">
+                                    {{editingBudgetId !== null ? '✅ Update Budget' : '➕ Add Budget'}}
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" (click)="cancelBudgetForm()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="row mb-4" *ngIf="getAlerts().length > 0">
+        <div class="col-12">
+            <div class="alert alert-warning alert-dismissible fade show" role="alert" *ngFor="let alert of getAlerts()">
+                <strong>⚠️ Budget Alert!</strong> {{alert.message}}
+                <button type="button" class="btn-close" (click)="dismissAlert(alert.id)"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Budgets -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📊 Budget by Category</h5>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" (click)="sortBudgets('category')">
+                            Sort by Name
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" (click)="sortBudgets('spent')">
+                            Sort by Spent
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div *ngIf="budgets.length === 0" class="text-center py-4 text-muted">
+                        <h5>No budgets set for this period</h5>
+                        <p>Click "Set Budget" to create your first budget</p>
+                    </div>
+                    
+                    <div class="budget-list" *ngIf="budgets.length > 0">
+                        <div class="budget-item card mb-3" *ngFor="let budget of budgets">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-3">
+                                        <h6 class="mb-1">
+                                            <span class="badge bg-secondary me-2">{{budget.category}}</span>
+                                        </h6>
+                                        <small class="text-muted" *ngIf="budget.notes">{{budget.notes}}</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>
+                                                <strong>Spent:</strong> ${{budget.spent}} / ${{budget.amount}}
+                                            </span>
+                                            <span [class.text-success]="budget.percentage <= 75"
+                                                  [class.text-warning]="budget.percentage > 75 && budget.percentage <= 90"
+                                                  [class.text-danger]="budget.percentage > 90">
+                                                <strong>{{budget.percentage}}%</strong>
+                                            </span>
+                                        </div>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" 
+                                                 [class.bg-success]="budget.percentage <= 75" 
+                                                 [class.bg-warning]="budget.percentage > 75 && budget.percentage <= 90"
+                                                 [class.bg-danger]="budget.percentage > 90"
+                                                 [style.width.%]="Math.min(budget.percentage, 100)">
+                                                ${{budget.remaining}} left
+                                            </div>
+                                        </div>
+                                        <small class="text-muted mt-1 d-block" *ngIf="budget.alertThreshold">
+                                            Alert threshold: {{budget.alertThreshold}}%
+                                        </small>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" (click)="editBudget(budget.id)">
+                                                ✏️ Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" (click)="deleteBudget(budget.id)">
+                                                🗑️ Delete
+                                            </button>
+                                        </div>
+                                        <div class="mt-2">
+                                            <span class="badge" [class.bg-success]="budget.status === 'On Track'"
+                                                  [class.bg-warning]="budget.status === 'Warning'"
+                                                  [class.bg-danger]="budget.status === 'Over Budget'">
+                                                {{budget.status}}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Templates -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📋 Quick Budget Templates</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card template-card">
+                                <div class="card-body text-center">
+                                    <h6>Conservative Budget</h6>
+                                    <p class="text-muted small">Low spending limits</p>
+                                    <button class="btn btn-sm btn-outline-primary" (click)="applyTemplate('conservative')">
+                                        Apply Template
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card template-card">
+                                <div class="card-body text-center">
+                                    <h6>Balanced Budget</h6>
+                                    <p class="text-muted small">Moderate spending limits</p>
+                                    <button class="btn btn-sm btn-outline-primary" (click)="applyTemplate('balanced')">
+                                        Apply Template
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card template-card">
+                                <div class="card-body text-center">
+                                    <h6>Flexible Budget</h6>
+                                    <p class="text-muted small">Higher spending limits</p>
+                                    <button class="btn btn-sm btn-outline-primary" (click)="applyTemplate('flexible')">
+                                        Apply Template
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
